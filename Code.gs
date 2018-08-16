@@ -1,8 +1,6 @@
 // Project: Script to download SGX price list for personal portfolio price update
 // Author: cwtan
 // Date created: 14 Aug 2018
-// Revision History:
-// 14 Aug 2018 - version 0.1 - Code creation
 
 function onOpen() {
   var spreadsheet = SpreadsheetApp.getActive();
@@ -34,10 +32,13 @@ function importSGX_() {
   }
 
   var importString = "http://infopub.sgx.com/Apps?A=COW_Prices_Content&B=SecuritiesHistoricalPrice&F=5254&G=SESprice.dat&H=" + dataDate;
-  //var importString = "http://infopub.sgx.com/Apps?A=COW_Prices_Content&B=SecuritiesHistoricalPrice&F=5254&G=SESprice.dat&H=2018-08-14";
   
   // import SGX price list data into datasheet
-  dataSheet.getRange('A1').setFormula('=IMPORTDATA("' + importString + '")')
+  var csvUrl = importString;
+  var csvContent = UrlFetchApp.fetch(csvUrl).getContentText();
+  var csvData = Utilities.parseCsv(csvContent,';');
+  
+  dataSheet.getRange(1, 1, csvData.length, csvData[0].length).setValues(csvData);
   
   // Check if data is correct, if there is valid data, cell(1,1) won't be blank.
   // If there is valid data, split the data using ; delimiter.
@@ -46,27 +47,18 @@ function importSGX_() {
     
     var startRow = 1;
     var endRow = dataSheet.getLastRow();
-    
-    // Get the range value for the imported data, which is column 1. 
-    // This is faster than use getValue which will retrieve value one by one from server
-    // getRange(row, column, numRows, numColumns)
-    var rangeValues = dataSheet.getRange(1,1,endRow,1).getValues();
-    
-    for (var i = startRow; i <= endRow; i++) {
-       // accessing the array data, array start from 0, that's why need to put i-1
-       var data = rangeValues[i-1][0];
-       var splitData = data.split(";");
-       dataSheet.getRange(i,3,1,splitData.length).setValues([splitData]); 
-       }
    
     // Get the range value for stock codes, convert all the values to string and trim it.
     // Withut trim, matching could be troublesome because you need to
     // manually add space so to match
-    var rangeValues = dataSheet.getRange("Q1:Q").getValues();
+    var range = dataSheet.getRange("O1:O");
+    var rangeValues = range.getValues();
+    range.setNumberFormat("@");
+    
     for (var i = startRow; i <= endRow; i++) {
        // accessing the array data, array start from 0, that's why need to put i-1
        var data = rangeValues[i-1][0];
-       dataSheet.getRange(i,17).setValue(String(data).trim());
+       dataSheet.getRange(i,15).setValue(String(data).trim());
       }
    }
 }
