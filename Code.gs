@@ -20,8 +20,8 @@ function importSGX_() {
   // Current assumption is data is available after 6pm
   var todayDateTime = new Date();
   var currentHour = todayDateTime.getHours();
-
-  if (currentHour > 18) {
+  
+  if (currentHour >= 18) {
     var dataDate = Utilities.formatDate(new Date(), "GMT+8", "yyyy-MM-dd");
     Logger.log(dataDate);
   }else{
