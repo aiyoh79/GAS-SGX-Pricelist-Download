@@ -5,12 +5,12 @@
 function onOpen() {
   var spreadsheet = SpreadsheetApp.getActive();
   var menuItems = [
-    {name: 'Import SGX data...', functionName: 'importSGX_'},
+    {name: 'Import SGX data...', functionName: 'importSGX'},
   ];
   spreadsheet.addMenu('Import', menuItems);
 }
 
-function importSGX_() {
+function importSGX() {
   var spreadsheet = SpreadsheetApp.getActive();
   var dataSheet = spreadsheet.getSheetByName('Data');
   dataSheet.activate();
