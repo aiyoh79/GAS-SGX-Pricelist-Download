@@ -1,6 +1,5 @@
 // Project: Script to download SGX price list for personal portfolio price update
 // Author: cwtan
-// Date created: 14 Aug 2018
 
 function onOpen() {
   var spreadsheet = SpreadsheetApp.getActive();
@@ -15,24 +14,58 @@ function importSGX() {
   var dataSheet = spreadsheet.getSheetByName('Data');
   dataSheet.activate();
    
-  // Since the data is only available after market close
-  // codes below will make sure when it is run before market close, pick yesterday date
-  // Current assumption is data is available after 6pm
-  var todayDateTime = new Date();
-  var currentHour = todayDateTime.getHours();
-  
-  if (currentHour >= 18) {
-    var dataDate = Utilities.formatDate(new Date(), "GMT+8", "yyyy-MM-dd");
-    Logger.log(dataDate);
-  }else{
-    var MILLIS_PER_DAY = 1000 * 60 * 60 * 24;
-    var now = new Date();
-    var dataDate = Utilities.formatDate(new Date(now.getTime() - MILLIS_PER_DAY), "GMT+8", "yyyy-MM-dd");
-    Logger.log(dataDate);
-  }
+  // Getting date and the counter from 'Data' excel sheet 
+  var prevDate = new Date(dataSheet.getRange(1, 25).getValue());
+  var counter = dataSheet.getRange(1, 26).getValue();
+  // current date
+  var todayDate = new Date();
 
-  var importString = "http://infopub.sgx.com/Apps?A=COW_Prices_Content&B=SecuritiesHistoricalPrice&F=5254&G=SESprice.dat&H=" + dataDate;
+  // if prevDate is already indicate today's date, no need to run script as data already in  
+  if (sameDay(prevDate,todayDate)){
+    Logger.log("same date, no need to calculate, exit the script")
+    return 0;
+  }
+    
+  if (todayDate.getHours() < 17) {
+    // set to yesterday date
+    todayDate.setDate(todayDate.getDate() - 1)
+    if (sameDay(prevDate,todayDate)){
+      Logger.log("script run before 7pm where today's file is not available for download, and yesterday date file is already processed, so no need to run script, exit the script.")
+      return 0;
+    }
+    
+    Logger.log("Script run before 7pm where today's file is not available for download, let the script run with yesterday date to retrieve yesterday file for processing.")
+  }
+    
+  // calculate the number of days between today's date and prevDate (date recorded in the excel sheet)
+  // if prevDate is 14 Oct 2019 and today's date is 16 Oct 2019, the number of days should be 2
+  const oneDay = 24 * 60 * 60 * 1000; // hours*minutes*seconds*milliseconds
+  var nDays = Math.floor(Math.abs((todayDate - prevDate) / oneDay));
+  dataSheet.getRange(1, 1).setValue(nDays);
   
+  // loop through number of days to see what is the correct counter value to use
+  var loopDate = prevDate;
+  for (var i = 0; i < nDays; i++) {
+    loopDate.setDate(loopDate.getDate() + 1);
+    // day => Sunday = 0 ... Saturday = 6
+    var day = loopDate.getDay();
+    // only increase the counter is it is Monday to Friday (1 to 5) 
+    if (day != 0 && day != 6){
+      // on increase the counter if it is not holiday
+      if (holiday(loopDate) == 1) {
+        Logger.log("is holiday, no need to increase counter")
+      }
+      else{
+        counter = counter + 1;
+      }
+    }
+  }
+  Logger.log(todayDate + " + " + counter);
+    
+  // build the import url string
+  // 5566 = 14 Oct 2019
+  var importString = "https://links.sgx.com/1.0.0/securities-historical/" + counter + "/SESprice.dat";
+    
   // import SGX price list data into datasheet
   var csvUrl = importString;
   var csvContent = UrlFetchApp.fetch(csvUrl).getContentText();
@@ -60,5 +93,46 @@ function importSGX() {
        var data = rangeValues[i-1][0];
        dataSheet.getRange(i,15).setValue(String(data).trim());
       }
+    
+    dataSheet.getRange(1, 20).setValue(endRow);
+    
+    // Update the "data" sheet for latest date and counter
+    dataSheet.getRange(1, 25).setValue(todayDate); // date
+    dataSheet.getRange(1, 26).setValue(counter); // counter  
    }
+}
+
+function holiday(dateToCheck) {
+  // This function can help check whether the date you enter is public holiday
+  // This is based on Google holiday calander, however, Google does not follow Minstry of Manpower (MOM) published public holiday, 
+  // therefore an exclusion list is created to filter out those holiday not listed in MOM list.
+  // special holiday should not be included, example, polling day
+  
+  //var cal = CalendarApp.getCalendarById("en.singapore#holiday@group.v.calendar.google.com");
+  var cal = CalendarApp.getCalendarsByName("Holidays in Singapore");
+  // exclusion list of holidays which are not part of MOM published public holiday
+  const nonHolidayArray = ["Christmas Eve","New Year's Eve","Children's Day","Easter Saturday","Easter Sunday"];
+  //var holidays = cal.getEventsForDay(dateToCheck);
+  var holidays = cal[0].getEventsForDay(dateToCheck);
+  
+  var isHoliday = 0;
+  // if there is only one holiday per day  
+  if (holidays.length >= 1){
+    for (var i = 0; i < holidays.length; i++){
+      var eventTitle = holidays[i].getTitle();
+      // if the title is not in the exclusion list, then is holiday 
+      if ( nonHolidayArray.indexOf(eventTitle) == -1 ){
+        isHoliday = 1;
+      }
+    }
+  }
+  return isHoliday;
+}
+
+function sameDay(date1, date2) {
+  if (date1.getFullYear() == date2.getFullYear() && date1.getMonth() == date2.getMonth() && date1.getDate() == date2.getDate()) {
+    return 1;
+  }else{
+    return 0;
+  }
 }
