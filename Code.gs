@@ -41,8 +41,7 @@ function importSGX() {
   // if prevDate is 14 Oct 2019 and today's date is 16 Oct 2019, the number of days should be 2
   const oneDay = 24 * 60 * 60 * 1000; // hours*minutes*seconds*milliseconds
   var nDays = Math.floor(Math.abs((todayDate - prevDate) / oneDay));
-  dataSheet.getRange(1, 1).setValue(nDays);
-  
+
   // loop through number of days to see what is the correct counter value to use
   var loopDate = prevDate;
   for (var i = 0; i < nDays; i++) {
