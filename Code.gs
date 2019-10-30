@@ -26,7 +26,7 @@ function importSGX() {
     return 0;
   }
     
-  if (todayDate.getHours() < 17) {
+  if (todayDate.getHours() < 19) {
     // set to yesterday date
     todayDate.setDate(todayDate.getDate() - 1)
     if (sameDay(prevDate,todayDate)){
