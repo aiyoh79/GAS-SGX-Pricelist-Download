@@ -22,7 +22,7 @@ function importSGX() {
 
   // if prevDate is already indicate today's date, no need to run script as data already in  
   if (sameDay(prevDate,todayDate)){
-    Logger.log("same date, no need to calculate, exit the script")
+    Logger.log("same date, no need to calculate, exit the script")    
     return 0;
   }
     
@@ -44,6 +44,7 @@ function importSGX() {
 
   // loop through number of days to see what is the correct counter value to use
   var loopDate = prevDate;
+
   for (var i = 0; i < nDays; i++) {
     loopDate.setDate(loopDate.getDate() + 1);
     // day => Sunday = 0 ... Saturday = 6
@@ -59,8 +60,7 @@ function importSGX() {
       }
     }
   }
-  Logger.log(todayDate + " + " + counter);
-    
+
   // build the import url string
   // 5566 = 14 Oct 2019
   var importString = "https://links.sgx.com/1.0.0/securities-historical/" + counter + "/SESprice.dat";
@@ -96,7 +96,8 @@ function importSGX() {
     dataSheet.getRange(1, 20).setValue(endRow);
     
     // Update the "data" sheet for latest date and counter
-    dataSheet.getRange(1, 25).setValue(todayDate); // date
+    counterDate = dataSheet.getRange(1, 1).getValue(); // Get the value from the downloaded data
+    dataSheet.getRange(1, 25).setValue(counterDate); // date
     dataSheet.getRange(1, 26).setValue(counter); // counter  
    }
 }
